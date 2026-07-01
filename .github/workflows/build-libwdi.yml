@@ -32,7 +32,7 @@ jobs:
           $required = @(
             'msvc/config.h',
             'vendor/libusbK/sys/amd64/libusbK.sys',
-            'vendor/libusbK/sys/amd64/WdfCoInstaller01009.dll',
+            'vendor/libusbK/sys/amd64/WdfCoInstaller1009.dll',
             'vendor/libusbK/dll/amd64/libusbK.dll',
             'vendor/libusbK/dll/amd64/libusb0.dll',
             'vendor/libusbK/dll/x86/libusbK.dll',
