@@ -37,7 +37,7 @@
 /* #define LIBUSB0_DIR "..." */
 
 /* libusbK package here contains WdfCoInstaller01009.dll */
-#define WDF_VER 1009
+#define WDF_VER 01009
 
 #ifndef LIBUSBK_DIR
 #define LIBUSBK_DIR "D:/a/libwdi-statis/libwdi-statis/vendor/libusbK"
