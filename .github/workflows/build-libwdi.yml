@@ -52,7 +52,9 @@ jobs:
           foreach ($ig in $sx.Project.ItemGroup) {
             $remove = @()
             foreach ($pr in $ig.ProjectReference) {
-              if ($pr.Include -like '*installer_x86.vcxproj' -or $pr.Include -like '*installer_arm64.vcxproj') {
+              if ($pr.Include -like '*embedder.vcxproj' -or
+                  $pr.Include -like '*installer_x86.vcxproj' -or
+                  $pr.Include -like '*installer_arm64.vcxproj') {
                 $remove += $pr
               }
             }
