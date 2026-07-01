@@ -7,11 +7,13 @@ on:
     paths:
       - 'libwdi/**'
       - 'msvc/**'
+      - 'vendor/**'
       - '.github/workflows/build-libwdi.yml'
   pull_request:
     paths:
       - 'libwdi/**'
       - 'msvc/**'
+      - 'vendor/**'
       - '.github/workflows/build-libwdi.yml'
 
 jobs:
@@ -24,20 +26,27 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Verify required file
+      - name: Verify required files
         shell: powershell
         run: |
-          if (!(Test-Path msvc\config.h)) {
-            throw 'Missing msvc/config.h in repository'
+          $required = @(
+            'msvc/config.h',
+            'vendor/libusbK/sys/amd64/libusbK.sys',
+            'vendor/libusbK/dll/amd64/libusbK.dll',
+            'vendor/libusbK/dll/amd64/libusb0.dll',
+            'vendor/libusbK/dll/x86/libusbK.dll',
+            'vendor/libusbK/dll/x86/libusb0.dll'
+          )
+          foreach ($p in $required) {
+            if (!(Test-Path $p)) {
+              throw "Missing required file: $p"
+            }
           }
 
-      - name: Patch projects for x64-only CI build
+      - name: Patch libwdi_static project references for x64-only CI build
         shell: powershell
         run: |
-          $base = Join-Path $env:GITHUB_WORKSPACE 'libwdi\.msvc'
-          $embed = Join-Path $base 'embedder.vcxproj'
-          $static = Join-Path $base 'libwdi_static.vcxproj'
-
+          $static = Join-Path $env:GITHUB_WORKSPACE 'libwdi\.msvc\libwdi_static.vcxproj'
           [xml]$sx = Get-Content $static
           foreach ($ig in $sx.Project.ItemGroup) {
             $remove = @()
@@ -95,3 +104,15 @@ jobs:
           if-no-files-found: error
           compression-level: 6
           retention-days: 14
+
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: libwdi-build-diagnostics
+          path: |
+            msvc/config.h
+            libwdi/.msvc/*.vcxproj
+            libwdi/embedded.h
+          if-no-files-found: ignore
+          retention-days: 7

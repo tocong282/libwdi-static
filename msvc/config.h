@@ -1,66 +1,60 @@
-/* config.h.  Manual config for MSVC.  */
+/* config.h. CI/Repo-local config for MSVC. */
 
 #ifndef _MSC_VER
-#warn "msvc/config.h shouldn't be included for your development environment."
+#warning "msvc/config.h shouldn't be included for your development environment."
 #error "Please make sure the msvc/ directory is removed from your build path."
 #endif
 
 #if defined(_PREFAST_)
-/* Disable "Banned API Usage:" errors when using WDK's OACR/Prefast */
 #pragma warning(disable:28719)
 #endif
 #if defined(_MSC_VER)
-// Disable some VS2012 Code Analysis warnings
-#pragma warning(disable:6258)		// We'll use TerminateThread() regardless
+#pragma warning(disable:6258)
 #pragma warning(disable:6387)
 #endif
 
 /*
- * Embed WinUSB driver files from the following WDK location.
- * If needed, you can obtain the WDK redistributable components from:
- * https://go.microsoft.com/fwlink/p/?LinkID=253170
- * NB: You must also make sure the WDF_VER, COINSTALLER_DIR and X64_DIR
- * match your WinUSB redist directories.
+ * CI build policy:
+ * - x64 only
+ * - libusbK payload only
+ * - no WinUSB payload embedding
+ * - no libusb0 payload embedding
+ *
+ * Expected repo-local payload layout:
+ *   vendor/libusbK/
+ *     sys/amd64/libusbK.sys
+ *     dll/amd64/libusbK.dll
+ *     dll/amd64/libusb0.dll
+ *     dll/x86/libusbK.dll
+ *     dll/x86/libusb0.dll
  */
-#ifndef WDK_DIR
-#define WDK_DIR "C:/Program Files (x86)/Windows Kits/8.0"
-#endif
 
-/* WDK WDF coinstaller version */
-#define WDF_VER 1011
+/* No WinUSB payload in CI build */
+/* #define WDK_DIR "..." */
 
-/* CoInstaller subdirectory for WinUSB redist files ("winusb" or "wdf") */
-#define COINSTALLER_DIR "wdf"
+/* No libusb0 payload in CI build */
+/* #define LIBUSB0_DIR "..." */
 
-/* 64bit subdirectory for WinUSB redist files ("x64" or "amd64") */
-#define X64_DIR "x64"
-
-/* embed libusb0 driver files from the following location */
-#ifndef LIBUSB0_DIR
-#define LIBUSB0_DIR "D:/libusb-win32"
-#endif
-
-/* embed libusbK driver files from the following location */
 #ifndef LIBUSBK_DIR
-#define LIBUSBK_DIR "D:/libusbK/bin"
+#define LIBUSBK_DIR "D:/a/libwdi-statis/libwdi-statis/vendor/libusbK"
 #endif
 
-/* embed user defined driver files from the following location */
+/* Optional user payload dir */
 #ifndef USER_DIR
-// #define USER_DIR "C:/signed-driver"
+/* #define USER_DIR "C:/signed-driver" */
 #endif
 
 /* 32 bit support */
-// #define OPT_M32
+/* #define OPT_M32 */
 
 /* 64 bit support */
 #define OPT_M64
 
 /* ARM64 support */
-// #define OPT_ARM
+/* #define OPT_ARM */
 
 /* Debug message logging */
-//#define ENABLE_DEBUG_LOGGING
+/* #define ENABLE_DEBUG_LOGGING */
 
 /* Debug message logging (toggable) */
 #define INCLUDE_DEBUG_LOGGING
