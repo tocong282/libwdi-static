@@ -72,6 +72,12 @@ jobs:
         run: |
           msbuild libwdi\.msvc\installer_x64.vcxproj /p:Configuration=Release /p:Platform=x64 /m
 
+      - name: Normalize installer_x64 path for embedder
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force x64\Release\helper | Out-Null
+          Copy-Item libwdi\.msvc\x64\Release\helper\installer_x64.exe x64\Release\helper\installer_x64.exe -Force
+
       - name: Generate embedded.h
         shell: cmd
         run: |
@@ -90,8 +96,8 @@ jobs:
           New-Item -ItemType Directory -Force artifact\lib\x64 | Out-Null
           Copy-Item libwdi\libwdi.h artifact\include\libwdi.h
           Copy-Item libwdi\x64\Release\lib\libwdi.lib artifact\lib\x64\libwdi.lib
-          if (Test-Path libwdi\x64\Release\helper\installer_x64.exe) {
-            Copy-Item libwdi\x64\Release\helper\installer_x64.exe artifact\installer_x64.exe
+          if (Test-Path libwdi\.msvc\x64\Release\helper\installer_x64.exe) {
+            Copy-Item libwdi\.msvc\x64\Release\helper\installer_x64.exe artifact\installer_x64.exe
           }
           if (Test-Path libwdi\embedded.h) {
             Copy-Item libwdi\embedded.h artifact\embedded.h
