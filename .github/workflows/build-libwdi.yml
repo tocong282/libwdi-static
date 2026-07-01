@@ -97,7 +97,7 @@ jobs:
           New-Item -ItemType Directory -Force artifact\include | Out-Null
           New-Item -ItemType Directory -Force artifact\lib\x64 | Out-Null
           Copy-Item libwdi\libwdi.h artifact\include\libwdi.h
-          Copy-Item libwdi\x64\Release\lib\libwdi.lib artifact\lib\x64\libwdi.lib
+          Copy-Item libwdi\.msvc\x64\Release\lib\libwdi.lib artifact\lib\x64\libwdi.lib
           if (Test-Path libwdi\.msvc\x64\Release\helper\installer_x64.exe) {
             Copy-Item libwdi\.msvc\x64\Release\helper\installer_x64.exe artifact\installer_x64.exe
           }
