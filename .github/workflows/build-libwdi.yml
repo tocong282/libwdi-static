@@ -6,10 +6,12 @@ on:
     branches: [ main, master ]
     paths:
       - 'libwdi/**'
+      - 'msvc/**'
       - '.github/workflows/build-libwdi.yml'
   pull_request:
     paths:
       - 'libwdi/**'
+      - 'msvc/**'
       - '.github/workflows/build-libwdi.yml'
 
 jobs:
@@ -22,63 +24,49 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Patch embedder and static project for x64-only CI build
+      - name: Verify required file
+        shell: powershell
+        run: |
+          if (!(Test-Path msvc\config.h)) {
+            throw 'Missing msvc/config.h in repository'
+          }
+
+      - name: Patch projects for x64-only CI build
         shell: powershell
         run: |
           $base = Join-Path $env:GITHUB_WORKSPACE 'libwdi\.msvc'
           $embed = Join-Path $base 'embedder.vcxproj'
           $static = Join-Path $base 'libwdi_static.vcxproj'
 
-          [xml]$xml = Get-Content $embed
-          $ns = @{ msb = 'http://schemas.microsoft.com/developer/msbuild/2003' }
-          $ig = $xml.Project.ItemGroup | Where-Object { $_.Label -eq 'ProjectConfigurations' } | Select-Object -First 1
-          $existing = @($ig.ProjectConfiguration | ForEach-Object { $_.Include })
-          foreach ($pair in @('Debug|x64','Release|x64')) {
-            if ($existing -notcontains $pair) {
-              $pc = $xml.CreateElement('ProjectConfiguration', $ns.msb)
-              $pc.SetAttribute('Include', $pair)
-              $cfg = $xml.CreateElement('Configuration', $ns.msb)
-              $cfg.InnerText = $pair.Split('|')[0]
-              $plat = $xml.CreateElement('Platform', $ns.msb)
-              $plat.InnerText = $pair.Split('|')[1]
-              $pc.AppendChild($cfg) | Out-Null
-              $pc.AppendChild($plat) | Out-Null
-              $ig.AppendChild($pc) | Out-Null
-            }
-          }
-          $text = Get-Content $embed -Raw
-          if ($text -notmatch "'\$\(Configuration\)\|\$\(Platform\)'=='Release\|x64'") {
-            $insert = @"
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v143</PlatformToolset>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <CharacterSet>Unicode</CharacterSet>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v143</PlatformToolset>
-  </PropertyGroup>
-"@
-            $text = $text -replace '(<Import Project="\$\(VCTargetsPath\)\Microsoft\.Cpp\.props" />)', "$insert`r`n$1"
-            $text = $text -replace '(<ImportGroup Condition="''\$\(Configuration\)\|\$\(Platform\)''==''Debug\|Win32''" Label="PropertySheets">[\s\S]*?</ImportGroup>)', "$1`r`n  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets"><Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" /><Import Project="buildsettings.props" /></ImportGroup>`r`n  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets"><Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" /><Import Project="buildsettings.props" /></ImportGroup>"
-            Set-Content $embed $text
-          }
-
           [xml]$sx = Get-Content $static
-          foreach ($ig2 in $sx.Project.ItemGroup) {
+          foreach ($ig in $sx.Project.ItemGroup) {
             $remove = @()
-            foreach ($pr in $ig2.ProjectReference) {
+            foreach ($pr in $ig.ProjectReference) {
               if ($pr.Include -like '*installer_x86.vcxproj' -or $pr.Include -like '*installer_arm64.vcxproj') {
                 $remove += $pr
               }
             }
             foreach ($r in $remove) {
-              [void]$ig2.RemoveChild($r)
+              [void]$ig.RemoveChild($r)
             }
           }
           $sx.Save($static)
+
+      - name: Build embedder Win32
+        shell: cmd
+        run: |
+          msbuild libwdi\.msvc\embedder.vcxproj /p:Configuration=Release /p:Platform=Win32 /m
+
+      - name: Generate embedded.h
+        shell: cmd
+        run: |
+          cd libwdi
+          embedder embedded.h
+
+      - name: Build installer_x64
+        shell: cmd
+        run: |
+          msbuild libwdi\.msvc\installer_x64.vcxproj /p:Configuration=Release /p:Platform=x64 /m
 
       - name: Build libwdi static x64
         shell: cmd
@@ -89,11 +77,11 @@ jobs:
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force artifact\include | Out-Null
-          New-Item -ItemType Directory -Force artifact\libd | Out-Null
+          New-Item -ItemType Directory -Force artifact\lib\x64 | Out-Null
           Copy-Item libwdi\libwdi.h artifact\include\libwdi.h
-          Copy-Item libwdid\Release\lib\libwdi.lib artifact\libd\libwdi.lib
-          if (Test-Path libwdid\Release\helper\installer_x64.exe) {
-            Copy-Item libwdid\Release\helper\installer_x64.exe artifact\installer_x64.exe
+          Copy-Item libwdi\x64\Release\lib\libwdi.lib artifact\lib\x64\libwdi.lib
+          if (Test-Path libwdi\x64\Release\helper\installer_x64.exe) {
+            Copy-Item libwdi\x64\Release\helper\installer_x64.exe artifact\installer_x64.exe
           }
           if (Test-Path libwdi\embedded.h) {
             Copy-Item libwdi\embedded.h artifact\embedded.h
@@ -104,3 +92,6 @@ jobs:
         with:
           name: libwdi-x64-static
           path: artifact
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 14
