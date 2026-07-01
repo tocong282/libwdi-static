@@ -67,16 +67,16 @@ jobs:
         run: |
           msbuild libwdi\.msvc\embedder.vcxproj /p:Configuration=Release /p:Platform=Win32 /m
 
+      - name: Build installer_x64
+        shell: cmd
+        run: |
+          msbuild libwdi\.msvc\installer_x64.vcxproj /p:Configuration=Release /p:Platform=x64 /m
+
       - name: Generate embedded.h
         shell: cmd
         run: |
           cd libwdi
           embedder embedded.h
-
-      - name: Build installer_x64
-        shell: cmd
-        run: |
-          msbuild libwdi\.msvc\installer_x64.vcxproj /p:Configuration=Release /p:Platform=x64 /m
 
       - name: Build libwdi static x64
         shell: cmd
