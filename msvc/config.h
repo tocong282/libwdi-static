@@ -23,6 +23,7 @@
  * Expected repo-local payload layout:
  *   vendor/libusbK/
  *     sys/amd64/libusbK.sys
+ *     sys/amd64/WdfCoInstaller01009.dll
  *     dll/amd64/libusbK.dll
  *     dll/amd64/libusb0.dll
  *     dll/x86/libusbK.dll
@@ -34,6 +35,9 @@
 
 /* No libusb0 payload in CI build */
 /* #define LIBUSB0_DIR "..." */
+
+/* libusbK package here contains WdfCoInstaller01009.dll */
+#define WDF_VER 1009
 
 #ifndef LIBUSBK_DIR
 #define LIBUSBK_DIR "D:/a/libwdi-statis/libwdi-statis/vendor/libusbK"
